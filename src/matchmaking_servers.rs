@@ -304,7 +304,15 @@ matchmaking_servers_callback!(
     ),
     refresh_complete({}): (
         request: sys::HServerListRequest => Arc<Mutex<ServerListRequest>> where { ServerListRequest::get(_self) },
-        response: ServerResponse => ServerResponse where {response}
+        response: u32 => ServerResponse where {
+            eprintln!("[steamworks-rs] RefreshComplete raw response = {response}");
+            match response {
+                0 => ServerResponse::ServerResponded,
+                1 => ServerResponse::ServerFailedToRespond,
+                2 => ServerResponse::NoServersListedOnMasterServer,
+                _ => ServerResponse::ServerFailedToRespond,
+            }
+        }
     )
 );
 
@@ -381,6 +389,22 @@ impl ServerListRequest {
         }
     }
 
+    /// This description is AI generated.
+    ///
+    /// Cancels the outstanding query of this request, see
+    /// [`CancelQuery`](https://partner.steamgames.com/doc/api/ISteamMatchmakingServers#CancelQuery).
+    ///
+    /// If the query is still refreshing, Steamworks calls this request's
+    /// `refresh_complete` callback before `cancel_query` returns, while the
+    /// caller still holds the request's lock. A `refresh_complete` that locks
+    /// the request with `lock()` then deadlocks; use `try_lock()` there.
+    ///
+    /// Afterwards `is_refreshing()` is `false`, so `release()` succeeds. This
+    /// also matters inside `refresh_complete` with
+    /// `ServerResponse::NoServersListedOnMasterServer`: there `is_refreshing()`
+    /// is still `true` and `release()` returns `Err(ReleaseError::Refreshing)`
+    /// unless `cancel_query()` is called first.
+    ///
     /// # Errors
     ///
     /// Err if called on the released request
