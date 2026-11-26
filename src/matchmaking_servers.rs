@@ -384,6 +384,19 @@ impl ServerListRequest {
     /// # Errors
     ///
     /// Err if called on the released request
+    pub fn cancel_query(&self) -> Result<(), ()> {
+        unsafe {
+            self.released()?;
+
+            sys::SteamAPI_ISteamMatchmakingServers_CancelQuery(self.mms, self.h_req);
+
+            Ok(())
+        }
+    }
+
+    /// # Errors
+    ///
+    /// Err if called on the released request
     pub fn get_server_count(&self) -> Result<i32, ()> {
         unsafe {
             self.released()?;
