@@ -304,16 +304,27 @@ matchmaking_servers_callback!(
     ),
     refresh_complete({}): (
         request: sys::HServerListRequest => Arc<Mutex<ServerListRequest>> where { ServerListRequest::get(_self) },
-        response: ServerResponse => ServerResponse where {response}
+        response: u32 => ServerResponse where { ServerResponse::from(response) }
     )
 );
 
-#[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum ServerResponse {
-    ServerResponded = 0,
-    ServerFailedToRespond = 1,
-    NoServersListedOnMasterServer = 2,
+    ServerResponded,
+    ServerFailedToRespond,
+    NoServersListedOnMasterServer,
+    Other(u32),
+}
+
+impl From<u32> for ServerResponse {
+    fn from(response: u32) -> Self {
+        match response {
+            0 => Self::ServerResponded,
+            1 => Self::ServerFailedToRespond,
+            2 => Self::NoServersListedOnMasterServer,
+            other => Self::Other(other),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
